@@ -42,6 +42,7 @@ namespace EduStack.API.Controllers
             {
                 var studentId = GetCurrentUserId();
                 // Implementation would need to verify the enrollment belongs to the current user
+                await Task.CompletedTask; // Placeholder for async operation
                 return Ok(new { message = "Enrollment details would be returned here" });
             }
             catch (Exception ex)

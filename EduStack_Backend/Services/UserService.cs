@@ -159,7 +159,7 @@ namespace EduStack.API.Services
             if (request.Status == "approved")
             {
                 var instructorRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Instructor");
-                if (instructorRole != null)
+                if (instructorRole != null && application.User != null)
                 {
                     application.User.RoleId = instructorRole.Id;
                     application.User.UpdatedAt = DateTime.UtcNow;

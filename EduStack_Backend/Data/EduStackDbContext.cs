@@ -63,7 +63,7 @@ namespace EduStack.API.Data
 
             // Configure check constraints
             modelBuilder.Entity<Review>()
-                .HasCheckConstraint("CK_Review_Rating", "rating >= 1 AND rating <= 5");
+                .ToTable("reviews", t => t.HasCheckConstraint("CK_Review_Rating", "rating >= 1 AND rating <= 5"));
 
             // Seed data
             SeedData(modelBuilder);

@@ -162,7 +162,8 @@ namespace EduStack.API.Services
             {
                 // In a real implementation, you would invalidate the refresh token
                 // For now, this is a placeholder
-                return await Task.FromResult(true);
+                await Task.Delay(1); // Simulate async operation
+                return true;
             }
             catch (Exception ex)
             {
@@ -177,7 +178,8 @@ namespace EduStack.API.Services
             {
                 // Email verification implementation
                 // This would typically involve validating a token sent via email
-                return await Task.FromResult(true);
+                await Task.Delay(1); // Simulate async operation
+                return true;
             }
             catch (Exception ex)
             {

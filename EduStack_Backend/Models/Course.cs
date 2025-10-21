@@ -18,8 +18,7 @@ namespace EduStack.API.Models
         [Column("description")]
         public string? Description { get; set; }
 
-        [Column("price")]
-        [Column(TypeName = "decimal(10,2)")]
+        [Column("price", TypeName = "decimal(10,2)")]
         public decimal Price { get; set; } = 0.00m;
 
         [Column("instructor_id")]

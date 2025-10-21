@@ -16,8 +16,7 @@ namespace EduStack.API.Models
         [Column("course_id")]
         public int CourseId { get; set; }
 
-        [Column("amount")]
-        [Column(TypeName = "decimal(10,2)")]
+        [Column("amount", TypeName = "decimal(10,2)")]
         public decimal Amount { get; set; }
 
         [MaxLength(3)]

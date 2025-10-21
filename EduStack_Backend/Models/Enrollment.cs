@@ -19,8 +19,7 @@ namespace EduStack.API.Models
         [Column("enrollment_date")]
         public DateTime EnrollmentDate { get; set; } = DateTime.UtcNow;
 
-        [Column("progress_percentage")]
-        [Column(TypeName = "decimal(5,2)")]
+        [Column("progress_percentage", TypeName = "decimal(5,2)")]
         public decimal ProgressPercentage { get; set; } = 0.00m;
 
         [Column("completion_date")]
