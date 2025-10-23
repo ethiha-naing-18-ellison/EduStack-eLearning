@@ -119,14 +119,14 @@ namespace EduStack.API.Controllers
         {
             try
             {
-                var result = await _authService.VerifyEmailAsync(request.Email, request.Code);
+                var result = await _authService.VerifyEmailAsync(request.Token);
                 
                 if (result)
                 {
                     return Ok(new { message = "Email verified successfully" });
                 }
                 
-                return BadRequest(new { message = "Invalid verification code" });
+                return BadRequest(new { message = "Invalid or expired verification link" });
             }
             catch (Exception ex)
             {
@@ -216,8 +216,7 @@ namespace EduStack.API.Controllers
 
     public class VerifyEmailRequest
     {
-        public string Email { get; set; } = string.Empty;
-        public string Code { get; set; } = string.Empty;
+        public string Token { get; set; } = string.Empty;
     }
 
     public class ResendVerificationRequest

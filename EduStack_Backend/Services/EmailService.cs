@@ -16,7 +16,7 @@ namespace EduStack.API.Services
             _logger = logger;
         }
 
-        public async Task<bool> SendVerificationEmailAsync(string email, string verificationCode)
+        public async Task<bool> SendVerificationEmailAsync(string email, string verificationToken)
         {
             try
             {
@@ -37,6 +37,10 @@ namespace EduStack.API.Services
                 message.To.Add(email);
                 message.Subject = "Verify Your EduStack Account";
                 message.IsBodyHtml = true;
+                
+                var frontendUrl = _configuration["FrontendUrl"] ?? "http://localhost:5173";
+                var verificationLink = $"{frontendUrl}/verify-email?token={verificationToken}";
+                
                 message.Body = $@"
                     <html>
                     <body style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
@@ -49,17 +53,21 @@ namespace EduStack.API.Services
                             <h2 style='color: #1f2937; margin: 0 0 20px 0;'>Verify Your Email Address</h2>
                             <p style='color: #4b5563; margin: 0 0 30px 0; line-height: 1.6;'>
                                 Thank you for signing up with EduStack! To complete your registration, 
-                                please enter the verification code below:
+                                please click the button below to verify your email address:
                             </p>
                             
-                            <div style='background-color: #ffffff; padding: 20px; border-radius: 8px; border: 2px solid #e5e7eb; display: inline-block;'>
-                                <div style='font-size: 32px; font-weight: bold; color: #2563eb; letter-spacing: 8px; font-family: monospace;'>
-                                    {verificationCode}
-                                </div>
-                            </div>
+                            <a href='{verificationLink}' 
+                               style='background-color: #2563eb; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px; margin: 20px 0;'>
+                                Verify Email Address
+                            </a>
                             
                             <p style='color: #6b7280; margin: 30px 0 0 0; font-size: 14px;'>
-                                This code will expire in 10 minutes.
+                                This link will expire in 24 hours.
+                            </p>
+                            
+                            <p style='color: #9ca3af; margin: 20px 0 0 0; font-size: 12px;'>
+                                If the button doesn't work, copy and paste this link into your browser:<br>
+                                <a href='{verificationLink}' style='color: #2563eb; word-break: break-all;'>{verificationLink}</a>
                             </p>
                         </div>
                         

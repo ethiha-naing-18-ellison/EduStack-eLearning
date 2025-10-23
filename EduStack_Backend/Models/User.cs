@@ -46,6 +46,13 @@ namespace EduStack.API.Models
         [Column("email_verified")]
         public bool EmailVerified { get; set; } = false;
 
+        [MaxLength(255)]
+        [Column("verification_token")]
+        public string? VerificationToken { get; set; }
+
+        [Column("verification_token_expiry")]
+        public DateTime? VerificationTokenExpiry { get; set; }
+
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -60,10 +60,10 @@ namespace EduStack.API.Services
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
 
-                // Generate and send verification code
-                var verificationCode = GenerateVerificationCode();
-                await StoreVerificationCodeAsync(user.Id, verificationCode);
-                await _emailService.SendVerificationEmailAsync(user.Email, verificationCode);
+                // Generate and send verification link
+                var verificationToken = GenerateVerificationToken();
+                await StoreVerificationTokenAsync(user.Id, verificationToken);
+                await _emailService.SendVerificationEmailAsync(user.Email, verificationToken);
 
                 // Don't return tokens until email is verified
                 return new AuthResponse
@@ -177,30 +177,29 @@ namespace EduStack.API.Services
             }
         }
 
-        public async Task<bool> VerifyEmailAsync(string email, string code)
+        public async Task<bool> VerifyEmailAsync(string token)
         {
             try
             {
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+                // Find user by verification token
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.VerificationToken == token);
                 if (user == null)
                 {
                     return false;
                 }
 
-                // Check if verification code is valid
-                var isValidCode = await ValidateVerificationCodeAsync(user.Id, code);
-                if (!isValidCode)
+                // Check if token is still valid (not expired)
+                if (user.VerificationTokenExpiry < DateTime.UtcNow)
                 {
                     return false;
                 }
 
                 // Mark email as verified
                 user.EmailVerified = true;
+                user.VerificationToken = null; // Clear the token
+                user.VerificationTokenExpiry = null;
                 user.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
-
-                // Clean up verification code
-                await CleanupVerificationCodeAsync(user.Id);
 
                 return true;
             }
@@ -221,12 +220,12 @@ namespace EduStack.API.Services
                     return false;
                 }
 
-                // Generate new verification code
-                var verificationCode = GenerateVerificationCode();
-                await StoreVerificationCodeAsync(user.Id, verificationCode);
+                // Generate new verification token
+                var verificationToken = GenerateVerificationToken();
+                await StoreVerificationTokenAsync(user.Id, verificationToken);
                 
                 // Send verification email
-                var emailSent = await _emailService.SendVerificationEmailAsync(user.Email, verificationCode);
+                var emailSent = await _emailService.SendVerificationEmailAsync(user.Email, verificationToken);
                 return emailSent;
             }
             catch (Exception ex)
@@ -327,31 +326,20 @@ namespace EduStack.API.Services
             };
         }
 
-        private string GenerateVerificationCode()
+        private string GenerateVerificationToken()
         {
-            var random = new Random();
-            return random.Next(100000, 999999).ToString();
+            return Guid.NewGuid().ToString("N");
         }
 
-        private async Task StoreVerificationCodeAsync(int userId, string code)
+        private async Task StoreVerificationTokenAsync(int userId, string token)
         {
-            // In a real implementation, you would store this in a database table
-            // For now, we'll use a simple in-memory cache or you can create a VerificationCodes table
-            // This is a simplified implementation
-            await Task.Delay(1);
-        }
-
-        private async Task<bool> ValidateVerificationCodeAsync(int userId, string code)
-        {
-            // In a real implementation, you would validate against stored codes
-            // For now, we'll accept any 6-digit code for testing
-            return await Task.FromResult(code.Length == 6 && code.All(char.IsDigit));
-        }
-
-        private async Task CleanupVerificationCodeAsync(int userId)
-        {
-            // In a real implementation, you would remove the verification code from storage
-            await Task.Delay(1);
+            var user = await _context.Users.FindAsync(userId);
+            if (user != null)
+            {
+                user.VerificationToken = token;
+                user.VerificationTokenExpiry = DateTime.UtcNow.AddHours(24); // Token expires in 24 hours
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

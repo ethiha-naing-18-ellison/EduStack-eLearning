@@ -9,7 +9,7 @@ namespace EduStack.API.Services
         Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request);
         Task<bool> ChangePasswordAsync(int userId, ChangePasswordRequest request);
         Task<bool> LogoutAsync(string refreshToken);
-        Task<bool> VerifyEmailAsync(string email, string code);
+        Task<bool> VerifyEmailAsync(string token);
         Task<bool> ResendVerificationAsync(string email);
         Task<bool> ForgotPasswordAsync(string email);
         Task<bool> ResetPasswordAsync(string token, string newPassword);

@@ -221,14 +221,12 @@ const LoginPage = () => {
 
 // Enhanced Register Page with Email Verification
 const RegisterPage = () => {
-  const [step, setStep] = React.useState(1); // 1: Registration, 2: Email Verification
   const [formData, setFormData] = React.useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
-  const [verificationCode, setVerificationCode] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState('');
   const [success, setSuccess] = React.useState('');
@@ -290,8 +288,7 @@ const RegisterPage = () => {
       }
 
       const result = await response.json();
-      setSuccess('Registration successful! Please check your email for verification code.');
-      setStep(2);
+      setSuccess('Registration successful! Please check your email and click the verification link to complete your registration.');
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -299,52 +296,12 @@ const RegisterPage = () => {
     }
   };
 
-  const handleVerification = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (verificationCode.length !== 6) {
-      setError('Please enter a valid 6-digit code');
-      return;
-    }
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      // Real API call to verify email code
-      const response = await fetch('http://localhost:5000/api/auth/verify-email', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email: formData.email, 
-          code: verificationCode 
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Invalid verification code');
-      }
-
-      const result = await response.json();
-      setSuccess('Email verified successfully! You can now sign in.');
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 2000);
-    } catch (err: any) {
-      setError(err.message || 'Invalid verification code. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const resendCode = async () => {
+  const resendVerification = async () => {
     setIsLoading(true);
     setError('');
     
     try {
-      // Real API call to resend verification code
+      // Real API call to resend verification link
       const response = await fetch('http://localhost:5000/api/auth/resend-verification', {
         method: 'POST',
         headers: { 
@@ -357,18 +314,16 @@ const RegisterPage = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to resend code');
+        throw new Error(errorData.message || 'Failed to resend verification link');
       }
 
-      setSuccess('Verification code sent to your email!');
+      setSuccess('Verification link sent to your email!');
     } catch (err: any) {
-      setError(err.message || 'Failed to resend code. Please try again.');
+      setError(err.message || 'Failed to resend verification link. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
-
-  if (step === 1) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navigation />
@@ -384,11 +339,20 @@ const RegisterPage = () => {
             
             {success && (
               <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg mb-4">
-                {success}
+                <p className="mb-3">{success}</p>
+                <button 
+                  type="button"
+                  onClick={resendVerification}
+                  disabled={isLoading}
+                  className="text-sm text-green-700 hover:text-green-800 underline disabled:opacity-50"
+                >
+                  {isLoading ? 'Sending...' : 'Resend verification link'}
+                </button>
               </div>
             )}
 
-            <form onSubmit={handleRegistration} className="space-y-4">
+            {!success && (
+              <form onSubmit={handleRegistration} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                 <input 
@@ -445,6 +409,8 @@ const RegisterPage = () => {
                 {isLoading ? 'Creating Account...' : 'Create Account'}
               </button>
             </form>
+            )}
+            
             <p className="text-center text-gray-600 mt-4">
               Already have an account? <a href="/login" className="text-primary-600 hover:text-primary-700">Sign in</a>
             </p>
@@ -452,71 +418,103 @@ const RegisterPage = () => {
         </div>
       </div>
     );
+};
+
+// Email Verification Page
+const EmailVerificationPage = () => {
+  const [isVerifying, setIsVerifying] = React.useState(true);
+  const [isSuccess, setIsSuccess] = React.useState(false);
+  const [error, setError] = React.useState('');
+
+  React.useEffect(() => {
+    const verifyEmail = async () => {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        if (!token) {
+          setError('Invalid verification link');
+          setIsVerifying(false);
+          return;
+        }
+
+        const response = await fetch('http://localhost:5000/api/auth/verify-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        });
+
+        if (response.ok) {
+          setIsSuccess(true);
+        } else {
+          const errorData = await response.json();
+          setError(errorData.message || 'Verification failed');
+        }
+      } catch (err) {
+        setError('Verification failed. Please try again.');
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+
+    verifyEmail();
+  }, []);
+
+  if (isVerifying) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md w-full mx-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Verifying Email...</h2>
+          <p className="text-gray-600">Please wait while we verify your email address.</p>
+        </div>
+      </div>
+    );
   }
 
-  // Email Verification Step
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      <div className="flex items-center justify-center py-12">
-        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
-          <div className="text-center mb-6">
-            <div className="mx-auto w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mb-4">
-              <span className="text-2xl">📧</span>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Email</h2>
-            <p className="text-gray-600">
-              We've sent a 6-digit verification code to<br />
-              <strong>{formData.email}</strong>
-            </p>
+  if (isSuccess) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md w-full mx-4">
+          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <span className="text-2xl">✅</span>
           </div>
-          
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4">
-              {error}
-            </div>
-          )}
-          
-          {success && (
-            <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg mb-4">
-              {success}
-            </div>
-          )}
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Email Verified!</h2>
+          <p className="text-gray-600 mb-6">
+            Your email has been successfully verified. You can now sign in to your account.
+          </p>
+          <a 
+            href="/login" 
+            className="bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors"
+          >
+            Sign In
+          </a>
+        </div>
+      </div>
+    );
+  }
 
-          <form onSubmit={handleVerification} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Verification Code</label>
-              <input 
-                type="text" 
-                value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-center text-2xl tracking-widest"
-                placeholder="000000"
-                maxLength={6}
-                required
-              />
-            </div>
-            <button 
-              type="submit" 
-              disabled={isLoading || verificationCode.length !== 6}
-              className="w-full bg-primary-600 text-white py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Verifying...' : 'Verify Email'}
-            </button>
-          </form>
-          
-          <div className="mt-4 text-center">
-            <p className="text-gray-600 text-sm">
-              Didn't receive the code?{' '}
-              <button 
-                onClick={resendCode}
-                disabled={isLoading}
-                className="text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50"
-              >
-                Resend Code
-              </button>
-            </p>
-          </div>
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md w-full mx-4">
+        <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+          <span className="text-2xl">❌</span>
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Verification Failed</h2>
+        <p className="text-gray-600 mb-6">{error}</p>
+        <div className="space-y-3">
+          <a 
+            href="/register" 
+            className="block bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors"
+          >
+            Try Again
+          </a>
+          <a 
+            href="/" 
+            className="block bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+          >
+            Go Home
+          </a>
         </div>
       </div>
     </div>
@@ -530,6 +528,7 @@ const App: React.FC = () => {
       <Route path="/courses" element={<CoursesPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/verify-email" element={<EmailVerificationPage />} />
       <Route path="*" element={<SimpleHome />} />
     </Routes>
   );
