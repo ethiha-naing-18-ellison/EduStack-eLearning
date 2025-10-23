@@ -115,23 +115,44 @@ namespace EduStack.API.Controllers
         }
 
         [HttpPost("verify-email")]
-        public async Task<ActionResult> VerifyEmail([FromQuery] string token)
+        public async Task<ActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
         {
             try
             {
-                var result = await _authService.VerifyEmailAsync(token);
+                var result = await _authService.VerifyEmailAsync(request.Email, request.Code);
                 
                 if (result)
                 {
                     return Ok(new { message = "Email verified successfully" });
                 }
                 
-                return BadRequest(new { message = "Invalid verification token" });
+                return BadRequest(new { message = "Invalid verification code" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during email verification");
                 return StatusCode(500, new { message = "An error occurred during email verification" });
+            }
+        }
+
+        [HttpPost("resend-verification")]
+        public async Task<ActionResult> ResendVerification([FromBody] ResendVerificationRequest request)
+        {
+            try
+            {
+                var result = await _authService.ResendVerificationAsync(request.Email);
+                
+                if (result)
+                {
+                    return Ok(new { message = "Verification code sent to your email" });
+                }
+                
+                return BadRequest(new { message = "Failed to send verification code" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during resend verification");
+                return StatusCode(500, new { message = "An error occurred while sending verification code" });
             }
         }
 
@@ -191,5 +212,16 @@ namespace EduStack.API.Controllers
     {
         public string Token { get; set; } = string.Empty;
         public string NewPassword { get; set; } = string.Empty;
+    }
+
+    public class VerifyEmailRequest
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+    }
+
+    public class ResendVerificationRequest
+    {
+        public string Email { get; set; } = string.Empty;
     }
 }
